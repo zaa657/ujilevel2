@@ -1,13 +1,8 @@
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 
-/**
- * Mengembalikan path absolut direktori 'uploads' yang valid secara konsisten,
- * baik saat dijalankan dari TypeScript (tsx/ts-node), JavaScript (dist),
- * maupun saat process.cwd() berada di root project atau direktori dist.
- */
-export function getUploadDir(): string {
-  // Cek jika process.cwd() adalah direktori backend
+export function getBundledUploadDir(): string {
   const cwd = process.cwd();
   const potentialPaths = [
     path.resolve(__dirname, '..', 'uploads'),
@@ -18,23 +13,51 @@ export function getUploadDir(): string {
   ];
 
   for (const candidate of potentialPaths) {
-    // Cari direktori yang berada di folder backend yang sesungguhnya (bukan di dalam dist)
     if (candidate.includes('dist\\uploads') || candidate.includes('dist/uploads')) {
       continue;
     }
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
     const parentDir = path.resolve(candidate, '..');
     if (fs.existsSync(path.join(parentDir, 'package.json'))) {
-      if (!fs.existsSync(candidate)) {
-        fs.mkdirSync(candidate, { recursive: true });
-      }
       return candidate;
     }
   }
 
-  // Fallback: pastikan selalu ada folder uploads yang dibuat
-  const fallback = path.resolve(cwd, 'uploads');
-  if (!fs.existsSync(fallback)) {
-    fs.mkdirSync(fallback, { recursive: true });
+  return path.resolve(cwd, 'uploads');
+}
+
+export function getUploadDir(): string {
+  if (process.env.VERCEL) {
+    const tmpUploadDir = path.join(os.tmpdir(), 'uploads');
+    if (!fs.existsSync(tmpUploadDir)) {
+      fs.mkdirSync(tmpUploadDir, { recursive: true });
+    }
+    return tmpUploadDir;
   }
-  return fallback;
+
+  const targetDir = getBundledUploadDir();
+  try {
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+    return targetDir;
+  } catch {
+    const tmpFallback = path.join(os.tmpdir(), 'uploads');
+    if (!fs.existsSync(tmpFallback)) {
+      fs.mkdirSync(tmpFallback, { recursive: true });
+    }
+    return tmpFallback;
+  }
+}
+
+export function getStaticUploadDirs(): string[] {
+  const dirs = new Set<string>();
+  dirs.add(getUploadDir());
+  const bundled = getBundledUploadDir();
+  if (fs.existsSync(bundled)) {
+    dirs.add(bundled);
+  }
+  return Array.from(dirs);
 }
