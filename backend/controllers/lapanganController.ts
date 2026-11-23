@@ -1,10 +1,23 @@
 import { Request, Response } from 'express';
+import fs from 'fs';
+import path from 'path';
 import { pool } from '../config/db';
-import {
-  uploadImageFile,
-  removeStoredImage,
-  removeLocalFile,
-} from '../config/cloudinary';
+import { getUploadDir } from '../config/paths';
+
+function resolveUploadedUrl(file?: Express.Multer.File): string | null {
+  if (!file) return null;
+  return file.filename.startsWith('http') ? file.filename : `/uploads/${file.filename}`;
+}
+
+function removeUploadedFile(filePath?: string | null): void {
+  if (!filePath || filePath.startsWith('http')) return;
+  const fullPath = path.join(getUploadDir(), path.basename(filePath));
+  if (fs.existsSync(fullPath)) {
+    try {
+      fs.unlinkSync(fullPath);
+    } catch {}
+  }
+}
 
 export async function getAllLapangan(_req: Request, res: Response): Promise<void> {
   try {
@@ -103,7 +116,7 @@ export async function createLapangan(req: Request, res: Response): Promise<void>
     }
 
     if (!nama_lapangan || !resolvedJenis || harga_per_jam === undefined || harga_per_jam === '') {
-      if (req.file) removeLocalFile(req.file.path);
+      if (req.file) removeUploadedFile(req.file.filename);
       res.status(400).json({
         success: false,
         message: 'Nama lapangan, jenis olahraga, dan harga per jam wajib diisi',
@@ -113,7 +126,7 @@ export async function createLapangan(req: Request, res: Response): Promise<void>
 
     const parsedHarga = Number(harga_per_jam);
     if (isNaN(parsedHarga) || parsedHarga <= 0) {
-      if (req.file) removeLocalFile(req.file.path);
+      if (req.file) removeUploadedFile(req.file.filename);
       res.status(400).json({
         success: false,
         message: 'Harga per jam harus berupa angka valid lebih dari 0',
@@ -137,7 +150,7 @@ export async function createLapangan(req: Request, res: Response): Promise<void>
       }
     }
 
-    const fotoPath = req.file ? await uploadImageFile(req.file, 'lapangan') : null;
+    const fotoPath = resolveUploadedUrl(req.file);
 
     const result = await pool.query(
       `INSERT INTO lapangan (id_kategori, nama_lapangan, jenis_olahraga, harga_per_jam, deskripsi, foto_lapangan)
@@ -159,7 +172,7 @@ export async function createLapangan(req: Request, res: Response): Promise<void>
       data: result.rows[0],
     });
   } catch (error) {
-    if (req.file) removeLocalFile(req.file.path);
+    if (req.file) removeUploadedFile(req.file.filename);
     console.error('Create lapangan error:', error);
     res.status(500).json({
       success: false,
@@ -175,7 +188,7 @@ export async function updateLapangan(req: Request, res: Response): Promise<void>
 
     const existing = await pool.query('SELECT * FROM lapangan WHERE id = $1', [id]);
     if (existing.rows.length === 0) {
-      if (req.file) removeLocalFile(req.file.path);
+      if (req.file) removeUploadedFile(req.file.filename);
       res.status(404).json({
         success: false,
         message: 'Data lapangan tidak ditemukan',
@@ -199,7 +212,7 @@ export async function updateLapangan(req: Request, res: Response): Promise<void>
       deskripsi !== undefined ? String(deskripsi).trim() : currentLapangan.deskripsi;
 
     if (isNaN(updatedHarga) || updatedHarga <= 0) {
-      if (req.file) removeLocalFile(req.file.path);
+      if (req.file) removeUploadedFile(req.file.filename);
       res.status(400).json({
         success: false,
         message: 'Harga per jam harus berupa angka valid lebih dari 0',
@@ -210,9 +223,9 @@ export async function updateLapangan(req: Request, res: Response): Promise<void>
     let updatedFoto = currentLapangan.foto_lapangan;
     if (req.file) {
       if (currentLapangan.foto_lapangan) {
-        await removeStoredImage(currentLapangan.foto_lapangan);
+        removeUploadedFile(currentLapangan.foto_lapangan);
       }
-      updatedFoto = await uploadImageFile(req.file, 'lapangan');
+      updatedFoto = resolveUploadedUrl(req.file);
     }
 
     const updatedKategoriId = id_kategori
@@ -247,7 +260,7 @@ export async function updateLapangan(req: Request, res: Response): Promise<void>
       data: result.rows[0],
     });
   } catch (error) {
-    if (req.file) removeLocalFile(req.file.path);
+    if (req.file) removeUploadedFile(req.file.filename);
     console.error('Update lapangan error:', error);
     res.status(500).json({
       success: false,
@@ -273,7 +286,7 @@ export async function deleteLapangan(req: Request, res: Response): Promise<void>
     await pool.query('DELETE FROM lapangan WHERE id = $1', [id]);
 
     if (lapanganToDelete.foto_lapangan) {
-      await removeStoredImage(lapanganToDelete.foto_lapangan);
+      removeUploadedFile(lapanganToDelete.foto_lapangan);
     }
 
     res.status(200).json({

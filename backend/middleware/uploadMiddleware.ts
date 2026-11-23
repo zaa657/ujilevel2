@@ -1,13 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
 import multer, { FileFilterCallback } from 'multer';
+import { v2 as cloudinary } from 'cloudinary';
 import path from 'path';
 import fs from 'fs';
+import dotenv from 'dotenv';
 import { getUploadDir } from '../config/paths';
+
+dotenv.config();
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
-    const dir = getUploadDir();
-    cb(null, dir);
+    cb(null, getUploadDir());
   },
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
@@ -38,27 +47,43 @@ const upload = multer({
 export function handleSingleUpload(fieldName: string) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const uploader = upload.single(fieldName);
-    uploader(req, res, (err: any) => {
+    uploader(req, res, async (err: any) => {
       if (err instanceof multer.MulterError) {
-        if (err.code === 'LIMIT_FILE_SIZE') {
-          res.status(400).json({
+        const message =
+          err.code === 'LIMIT_FILE_SIZE'
+            ? 'Ukuran file melebihi batas maksimal 2 MB'
+            : `Gagal upload file: ${err.message}`;
+        res.status(400).json({ success: false, message });
+        return;
+      } else if (err) {
+        res.status(400).json({ success: false, message: err.message });
+        return;
+      }
+
+      if (
+        req.file &&
+        (process.env.CLOUDINARY_URL ||
+          (process.env.CLOUDINARY_CLOUD_NAME &&
+            process.env.CLOUDINARY_API_KEY &&
+            process.env.CLOUDINARY_API_SECRET))
+      ) {
+        try {
+          const result = await cloudinary.uploader.upload(req.file.path, {
+            folder: `sportbook/${fieldName}`,
+          });
+          if (fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+          }
+          req.file.filename = result.secure_url;
+        } catch (cloudErr: any) {
+          res.status(500).json({
             success: false,
-            message: 'Ukuran file melebihi batas maksimal 2 MB',
+            message: `Gagal upload ke Cloudinary: ${cloudErr.message}`,
           });
           return;
         }
-        res.status(400).json({
-          success: false,
-          message: `Gagal upload file: ${err.message}`,
-        });
-        return;
-      } else if (err) {
-        res.status(400).json({
-          success: false,
-          message: err.message,
-        });
-        return;
       }
+
       next();
     });
   };
