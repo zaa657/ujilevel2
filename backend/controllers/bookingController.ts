@@ -1,22 +1,11 @@
 import { Response } from 'express';
-import fs from 'fs';
-import path from 'path';
 import { pool } from '../config/db';
-import { getUploadDir } from '../config/paths';
+import {
+  uploadImageFile,
+  removeStoredImage,
+  removeLocalFile,
+} from '../config/cloudinary';
 import { AuthRequest } from '../middleware/authMiddleware';
-
-function removeUploadedFile(filePath?: string | null): void {
-  if (!filePath) return;
-  const fileName = path.basename(filePath);
-  const fullPath = path.join(getUploadDir(), fileName);
-  if (fs.existsSync(fullPath)) {
-    try {
-      fs.unlinkSync(fullPath);
-    } catch (err: any) {
-      console.error('Failed to remove file:', err.message);
-    }
-  }
-}
 
 function parseTimeToMinutes(timeStr: string): number {
   if (!timeStr) return 0;
@@ -142,7 +131,7 @@ export async function createBooking(req: AuthRequest, res: Response): Promise<vo
     const { tanggal_sewa, jam_mulai, durasi_jam } = req.body;
 
     if (!lapanganId || !tanggal_sewa || !jam_mulai || !durasi_jam) {
-      if (req.file) removeUploadedFile(req.file.filename);
+      if (req.file) removeLocalFile(req.file.path);
       res.status(400).json({
         success: false,
         message: 'Lapangan, tanggal sewa, jam mulai, dan durasi wajib diisi',
@@ -152,7 +141,7 @@ export async function createBooking(req: AuthRequest, res: Response): Promise<vo
 
     const parsedDurasi = Number(durasi_jam);
     if (isNaN(parsedDurasi) || parsedDurasi <= 0) {
-      if (req.file) removeUploadedFile(req.file.filename);
+      if (req.file) removeLocalFile(req.file.path);
       res.status(400).json({
         success: false,
         message: 'Durasi sewa minimal 1 jam',
@@ -162,7 +151,7 @@ export async function createBooking(req: AuthRequest, res: Response): Promise<vo
 
     const lapanganResult = await pool.query('SELECT * FROM lapangan WHERE id = $1', [lapanganId]);
     if (lapanganResult.rows.length === 0) {
-      if (req.file) removeUploadedFile(req.file.filename);
+      if (req.file) removeLocalFile(req.file.path);
       res.status(404).json({
         success: false,
         message: 'Lapangan yang dipilih tidak ditemukan',
@@ -191,7 +180,7 @@ export async function createBooking(req: AuthRequest, res: Response): Promise<vo
     });
 
     if (hasOverlap) {
-      if (req.file) removeUploadedFile(req.file.filename);
+      if (req.file) removeLocalFile(req.file.path);
       res.status(409).json({
         success: false,
         message: 'Jadwal lapangan bertabrakan dengan pesanan yang sudah ada pada rentang jam tersebut',
@@ -200,7 +189,7 @@ export async function createBooking(req: AuthRequest, res: Response): Promise<vo
     }
 
     const totalHarga = parsedDurasi * Number(lapangan.harga_per_jam);
-    const buktiBayarPath = req.file ? `/uploads/${req.file.filename}` : null;
+    const buktiBayarPath = req.file ? await uploadImageFile(req.file, 'bukti_bayar') : null;
 
     const insertResult = await pool.query(
       `INSERT INTO bookings (user_id, lapangan_id, tanggal_sewa, jam_mulai, durasi_jam, total_harga, bukti_bayar, status_booking)
@@ -250,7 +239,7 @@ export async function createBooking(req: AuthRequest, res: Response): Promise<vo
       data: fetchCreated.rows[0],
     });
   } catch (error) {
-    if (req.file) removeUploadedFile(req.file.filename);
+    if (req.file) removeLocalFile(req.file.path);
     console.error('Create booking error:', error);
     res.status(500).json({
       success: false,
@@ -273,7 +262,7 @@ export async function updateBooking(req: AuthRequest, res: Response): Promise<vo
     );
 
     if (existing.rows.length === 0) {
-      if (req.file) removeUploadedFile(req.file.filename);
+      if (req.file) removeLocalFile(req.file.path);
       res.status(404).json({
         success: false,
         message: 'Data pemesanan tidak ditemukan',
@@ -284,7 +273,7 @@ export async function updateBooking(req: AuthRequest, res: Response): Promise<vo
     const currentBooking = existing.rows[0];
 
     if (req.user?.role !== 'admin' && currentBooking.user_id !== req.user?.id) {
-      if (req.file) removeUploadedFile(req.file.filename);
+      if (req.file) removeLocalFile(req.file.path);
       res.status(403).json({
         success: false,
         message: 'Anda tidak memiliki akses untuk mengubah pesanan ini',
@@ -300,7 +289,7 @@ export async function updateBooking(req: AuthRequest, res: Response): Promise<vo
         : currentBooking.durasi_jam;
 
     if (isNaN(updatedDurasi) || updatedDurasi <= 0) {
-      if (req.file) removeUploadedFile(req.file.filename);
+      if (req.file) removeLocalFile(req.file.path);
       res.status(400).json({
         success: false,
         message: 'Durasi jam harus berupa angka valid lebih dari 0',
@@ -328,7 +317,7 @@ export async function updateBooking(req: AuthRequest, res: Response): Promise<vo
     });
 
     if (hasOverlap) {
-      if (req.file) removeUploadedFile(req.file.filename);
+      if (req.file) removeLocalFile(req.file.path);
       res.status(409).json({
         success: false,
         message: 'Jadwal pemesanan bertabrakan dengan pesanan lain pada rentang jam tersebut',
@@ -351,7 +340,7 @@ export async function updateBooking(req: AuthRequest, res: Response): Promise<vo
         'Selesai',
       ];
       if (!validStatus.includes(status_booking)) {
-        if (req.file) removeUploadedFile(req.file.filename);
+        if (req.file) removeLocalFile(req.file.path);
         res.status(400).json({
           success: false,
           message:
@@ -365,9 +354,9 @@ export async function updateBooking(req: AuthRequest, res: Response): Promise<vo
     let updatedBukti = currentBooking.bukti_bayar;
     if (req.file) {
       if (currentBooking.bukti_bayar) {
-        removeUploadedFile(currentBooking.bukti_bayar);
+        await removeStoredImage(currentBooking.bukti_bayar);
       }
-      updatedBukti = `/uploads/${req.file.filename}`;
+      updatedBukti = await uploadImageFile(req.file, 'bukti_bayar');
     }
 
     await pool.query(
@@ -423,7 +412,7 @@ export async function updateBooking(req: AuthRequest, res: Response): Promise<vo
       data: fetchUpdated.rows[0],
     });
   } catch (error) {
-    if (req.file) removeUploadedFile(req.file.filename);
+    if (req.file) removeLocalFile(req.file.path);
     console.error('Update booking error:', error);
     res.status(500).json({
       success: false,
@@ -537,7 +526,7 @@ export async function deleteBooking(req: AuthRequest, res: Response): Promise<vo
     await pool.query('DELETE FROM bookings WHERE id = $1', [id]);
 
     if (bookingToDelete.bukti_bayar) {
-      removeUploadedFile(bookingToDelete.bukti_bayar);
+      await removeStoredImage(bookingToDelete.bukti_bayar);
     }
 
     res.status(200).json({
