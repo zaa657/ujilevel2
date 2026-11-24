@@ -528,15 +528,6 @@ class AdminLapanganItemCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (lapangan.alamat != null && lapangan.alamat!.isNotEmpty) ...[
-                  const SizedBox(height: 3),
-                  Text(
-                    lapangan.alamat!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-                  ),
-                ],
                 const SizedBox(height: 4),
                 Text(
                   lapangan.deskripsi.isNotEmpty ? lapangan.deskripsi : 'Belum ada deskripsi lapangan.',

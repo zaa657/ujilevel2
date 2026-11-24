@@ -6,8 +6,8 @@ import { getUploadDir } from '../config/paths';
 
 const LAPANGAN_SELECT_SQL = `
   SELECT l.id, l.id_kategori, l.nama_lapangan, l.jenis_olahraga, l.harga_per_jam,
-         l.deskripsi, l.foto_lapangan, l.latitude, l.longitude, l.alamat,
-         l.created_at, l.updated_at, k.keterangan AS keterangan_kategori
+         l.deskripsi, l.foto_lapangan, l.created_at, l.updated_at,
+         k.keterangan AS keterangan_kategori
   FROM lapangan l
   LEFT JOIN kategori k ON l.id_kategori = k.id_kategori
 `;

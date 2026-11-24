@@ -180,21 +180,6 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
                           lap.namaLapangan,
                           style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800, color: AppColors.courtInk, height: 1.2),
                         ),
-                        if (lap.alamat != null && lap.alamat!.isNotEmpty) ...[
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              const Icon(Icons.place_outlined, size: 16, color: AppColors.turfGreenDark),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  lap.alamat!,
-                                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppColors.textMuted),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
                         const SizedBox(height: 10),
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.baseline,

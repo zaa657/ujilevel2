@@ -231,24 +231,16 @@ class CategoryCircleItem extends StatelessWidget {
 
 class LapanganCatalogCard extends StatelessWidget {
   final LapanganModel lapangan;
-  final double? userLatitude;
-  final double? userLongitude;
   final VoidCallback onTap;
 
   const LapanganCatalogCard({
     super.key,
     required this.lapangan,
-    this.userLatitude,
-    this.userLongitude,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final distanceInMeters = (userLatitude != null && userLongitude != null)
-        ? lapangan.calculateDistanceInMeters(userLatitude!, userLongitude!)
-        : null;
-
     return Material(
       color: AppColors.pureWhite,
       borderRadius: BorderRadius.circular(18),
@@ -275,30 +267,6 @@ class LapanganCatalogCard extends StatelessWidget {
                         imageUrl: lapangan.fullFotoUrl,
                         jenisOlahraga: lapangan.jenisOlahraga,
                       ),
-                      if (distanceInMeters != null)
-                        Positioned(
-                          left: 12,
-                          top: 12,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: AppColors.courtInk.withValues(alpha: 0.9),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: AppColors.turfGreen.withValues(alpha: 0.6)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.near_me_rounded, size: 13, color: AppColors.turfGreen),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${LapanganModel.formatDistance(distanceInMeters)} dari Anda',
-                                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: AppColors.pureWhite),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                       Positioned(
                         right: 12,
                         bottom: 12,
@@ -326,23 +294,6 @@ class LapanganCatalogCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, color: AppColors.courtInk),
                     ),
-                    if (lapangan.alamat != null && lapangan.alamat!.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(Icons.place_outlined, size: 14, color: AppColors.textMuted),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              lapangan.alamat!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textMuted),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
                     const SizedBox(height: 6),
                     Text(
                       lapangan.deskripsi.isNotEmpty ? lapangan.deskripsi : 'Lapangan olahraga standar kompetisi.',

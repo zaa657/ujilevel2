@@ -7,7 +7,6 @@ import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/booking_service.dart';
 import '../services/lapangan_service.dart';
-import '../services/location_service.dart';
 import 'admin_dashboard_screen.dart';
 import 'lapangan_detail_screen.dart';
 import 'my_bookings_screen.dart';
@@ -42,12 +41,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoadingBookings = false;
   String? _bookingError;
 
-  double? _userLatitude;
-  double? _userLongitude;
-  String? _userAddressLabel;
-  bool _isDetectingLocation = false;
-  bool _sortByNearest = false;
-
   bool get _isAdmin => widget.user.isAdmin;
 
   @override
@@ -64,32 +57,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  Future<void> _detectUserLocation() async {
-    setState(() => _isDetectingLocation = true);
-    final result = await LocationService.detectCurrentLocation();
-    if (!mounted) return;
-    setState(() => _isDetectingLocation = false);
-
-    if (result.success && result.latitude != null && result.longitude != null) {
-      setState(() {
-        _userLatitude = result.latitude;
-        _userLongitude = result.longitude;
-        _userAddressLabel = result.addressLabel;
-        _sortByNearest = true;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Lokasi terdeteksi! Menampilkan lapangan terdekat dari posisi Anda.'),
-          backgroundColor: AppColors.courtInk,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.message), backgroundColor: AppColors.errorInk),
-      );
-    }
   }
 
   Future<void> _loadCatalogData() async {
@@ -140,25 +107,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<LapanganModel> get _filteredLapangan {
     final query = _searchQuery.trim().toLowerCase();
-    final list = _lapanganList.where((lap) {
+    return _lapanganList.where((lap) {
       final matchesKategori = _selectedKategori == 'Semua' ||
           lap.jenisOlahraga.toLowerCase() == _selectedKategori.toLowerCase();
       final matchesSearch = query.isEmpty ||
           lap.namaLapangan.toLowerCase().contains(query) ||
           lap.jenisOlahraga.toLowerCase().contains(query) ||
-          lap.deskripsi.toLowerCase().contains(query) ||
-          (lap.alamat != null && lap.alamat!.toLowerCase().contains(query));
+          lap.deskripsi.toLowerCase().contains(query);
       return matchesKategori && matchesSearch;
     }).toList();
-
-    if (_sortByNearest && _userLatitude != null && _userLongitude != null) {
-      final distances = {
-        for (final lap in list)
-          lap.id: lap.calculateDistanceInMeters(_userLatitude!, _userLongitude!) ?? double.infinity,
-      };
-      list.sort((a, b) => distances[a.id]!.compareTo(distances[b.id]!));
-    }
-    return list;
   }
 
   Future<void> _openLapanganDetail(LapanganModel lapangan) async {
@@ -250,50 +207,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.courtInk),
                             ),
                             const SizedBox(height: 2),
-                            InkWell(
-                              onTap: _isDetectingLocation ? null : _detectUserLocation,
-                              borderRadius: BorderRadius.circular(10),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 2),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      _userLatitude != null ? Icons.my_location_rounded : Icons.location_on_rounded,
-                                      size: 16,
-                                      color: AppColors.courtInk,
-                                    ),
-                                    const SizedBox(width: 5),
-                                    Flexible(
-                                      child: Text(
-                                        _userAddressLabel ?? 'Deteksi Lokasi Saya (Cari Terdekat)',
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w800,
-                                          color: AppColors.courtInk,
-                                          decoration: _userLatitude == null ? TextDecoration.underline : null,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    if (_isDetectingLocation)
-                                      const SizedBox(
-                                        width: 14,
-                                        height: 14,
-                                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.courtInk),
-                                      )
-                                    else if (_userLatitude != null)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(color: AppColors.courtInk, borderRadius: BorderRadius.circular(8)),
-                                        child: const Text(
-                                          'GPS Aktif',
-                                          style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: AppColors.turfGreen),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
+                            const Text(
+                              'Katalog Lapangan Olahraga',
+                              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppColors.courtInk),
                             ),
                           ],
                         ),
@@ -377,97 +293,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 14),
-                if (_userLatitude == null)
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: AppColors.fieldMist,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.borderSubtle),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.near_me_rounded, color: AppColors.courtInk, size: 20),
-                        const SizedBox(width: 10),
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Cari Lapangan Terdekat', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.courtInk)),
-                              SizedBox(height: 2),
-                              Text('Aktifkan GPS untuk menemukan venue terdekat dari posisi Anda.', style: TextStyle(fontSize: 11.5, color: AppColors.textMuted)),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton.icon(
-                          onPressed: _isDetectingLocation ? null : _detectUserLocation,
-                          icon: _isDetectingLocation
-                              ? const SizedBox(
-                                  width: 12,
-                                  height: 12,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.courtInk),
-                                )
-                              : const Icon(Icons.my_location_rounded, size: 14),
-                          label: const Text('Deteksi', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.turfGreen,
-                            foregroundColor: AppColors.courtInk,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE8F5E9),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.turfGreenDark.withValues(alpha: 0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.check_circle_rounded, color: AppColors.turfGreenDark, size: 18),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Lokasi Anda: $_userAddressLabel',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.courtInk),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        FilterChip(
-                          selected: _sortByNearest,
-                          showCheckmark: false,
-                          avatar: Icon(
-                            Icons.sort_rounded,
-                            size: 14,
-                            color: _sortByNearest ? AppColors.pureWhite : AppColors.courtInk,
-                          ),
-                          label: Text(
-                            _sortByNearest ? 'Terdekat Aktif' : 'Urutkan Terdekat',
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w800,
-                              color: _sortByNearest ? AppColors.pureWhite : AppColors.courtInk,
-                            ),
-                          ),
-                          backgroundColor: AppColors.pureWhite,
-                          selectedColor: AppColors.courtInk,
-                          onSelected: (val) => setState(() => _sortByNearest = val),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ],
-                    ),
-                  ),
                 if (_isLoadingCatalog)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 64),
@@ -488,8 +313,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.only(bottom: 18),
                       child: LapanganCatalogCard(
                         lapangan: lap,
-                        userLatitude: _userLatitude,
-                        userLongitude: _userLongitude,
                         onTap: () => _openLapanganDetail(lap),
                       ),
                     ),
