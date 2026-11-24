@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 class ApiConfig {
   static String get baseUrl {
@@ -29,8 +31,7 @@ class ApiConfig {
   }
 
   static String formatRupiah(num value) {
-    final intVal = value.round();
-    final str = intVal.toString();
+    final str = value.round().toString();
     final buffer = StringBuffer();
     for (int i = 0; i < str.length; i++) {
       if (i > 0 && (str.length - i) % 3 == 0) {
@@ -39,5 +40,22 @@ class ApiConfig {
       buffer.write(str[i]);
     }
     return 'Rp ${buffer.toString()}';
+  }
+
+  static http.MultipartFile buildImageMultipart(
+    String fieldName,
+    Uint8List bytes,
+    String? fileName, {
+    String fallbackName = 'upload.png',
+  }) {
+    final safeName = (fileName != null && fileName.isNotEmpty) ? fileName : fallbackName;
+    final lower = safeName.toLowerCase();
+    final subType = (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) ? 'jpeg' : 'png';
+    return http.MultipartFile.fromBytes(
+      fieldName,
+      bytes,
+      filename: safeName,
+      contentType: MediaType('image', subType),
+    );
   }
 }

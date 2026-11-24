@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/app_theme.dart';
+import '../../models/booking_model.dart';
 
 InputDecoration adminInputDecoration(String hint) {
   return InputDecoration(
@@ -27,6 +28,123 @@ InputDecoration adminInputDecoration(String hint) {
       borderSide: const BorderSide(color: AppColors.courtInk, width: 2),
     ),
   );
+}
+
+class BookingReceiptBox extends StatelessWidget {
+  final BookingModel booking;
+  final String emptyMessage;
+
+  const BookingReceiptBox({
+    super.key,
+    required this.booking,
+    this.emptyMessage = 'Belum ada file bukti bayar yang diunggah untuk pesanan ini.',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.fieldMist,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderSubtle),
+      ),
+      child: booking.hasBuktiBayar
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 175,
+                    child: Image.network(
+                      booking.fullBuktiBayarUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: AppColors.pureWhite,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.receipt_long_rounded,
+                              size: 40,
+                              color: AppColors.turfGreenDark,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              booking.buktiBayarFileName,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.courtInk,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            const Text(
+                              'Bukti pembayaran telah terunggah',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      size: 18,
+                      color: AppColors.turfGreenDark,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'File: ${booking.buktiBayarFileName}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.courtInk,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            )
+          : Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    color: AppColors.errorInk,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      emptyMessage,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.courtInk,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
 }
 
 class AdminSectionTabButton extends StatelessWidget {
@@ -200,9 +318,8 @@ class AdminErrorState extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w600,
                 color: AppColors.errorInk,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 14),
@@ -211,7 +328,7 @@ class AdminErrorState extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.courtInk,
                 foregroundColor: AppColors.pureWhite,
-                minimumSize: const Size(130, 44),
+                minimumSize: const Size(120, 44),
               ),
               child: const Text('Coba Lagi'),
             ),

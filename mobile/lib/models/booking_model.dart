@@ -51,29 +51,10 @@ class BookingModel {
   /// Normalizes backend status into one of: 'pending', 'confirmed', 'cancelled', 'completed'
   String get normalizedStatus {
     final lower = statusBooking.trim().toLowerCase();
-    if (lower == 'confirmed' || lower == 'disetujui') {
-      return 'confirmed';
-    }
-    if (lower == 'cancelled' || lower == 'ditolak' || lower == 'dibatalkan') {
-      return 'cancelled';
-    }
-    if (lower == 'completed' || lower == 'selesai') {
-      return 'completed';
-    }
+    if (lower == 'confirmed' || lower == 'disetujui') return 'confirmed';
+    if (lower == 'cancelled' || lower == 'ditolak' || lower == 'dibatalkan') return 'cancelled';
+    if (lower == 'completed' || lower == 'selesai') return 'completed';
     return 'pending';
-  }
-
-  String get statusLabel {
-    switch (normalizedStatus) {
-      case 'confirmed':
-        return 'confirmed';
-      case 'cancelled':
-        return 'cancelled';
-      case 'completed':
-        return 'completed';
-      default:
-        return 'pending';
-    }
   }
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {

@@ -33,16 +33,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _submitRegister() async {
-    setState(() {
-      _errorMessage = null;
-    });
-
+    setState(() => _errorMessage = null);
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isLoading = true);
     final result = await AuthService.register(
       name: _nameController.text,
       email: _emailController.text,
@@ -50,10 +44,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
 
     if (!mounted) return;
-
-    setState(() {
-      _isLoading = false;
-    });
+    setState(() => _isLoading = false);
 
     if (result.success && result.user != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -63,49 +54,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       );
       Navigator.of(context).pushAndRemoveUntil(
-        RollUpPageRoute(page: HomeScreen(user: result.user!)),
+        MaterialPageRoute(builder: (_) => HomeScreen(user: result.user!)),
         (route) => false,
       );
     } else {
-      setState(() {
-        _errorMessage = result.message;
-      });
+      setState(() => _errorMessage = result.message);
     }
-  }
-
-  InputDecoration _inputDecoration({
-    required String hintText,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      hintText: hintText,
-      hintStyle: const TextStyle(
-        color: AppColors.textMuted,
-        fontWeight: FontWeight.w400,
-      ),
-      filled: true,
-      fillColor: AppColors.fieldMist,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 18,
-      ),
-      suffixIcon: suffixIcon,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(28),
-        borderSide: const BorderSide(color: AppColors.borderSubtle),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(28),
-        borderSide: const BorderSide(color: AppColors.borderSubtle),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(28),
-        borderSide: const BorderSide(
-          color: AppColors.courtInk,
-          width: 2,
-        ),
-      ),
-    );
   }
 
   @override
@@ -131,24 +85,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             Navigator.of(context).popUntil((route) => route.isFirst);
                           } else {
                             Navigator.of(context).pushReplacement(
-                              RollUpPageRoute(
-                                page: const WelcomeScreen(),
-                              ),
+                              MaterialPageRoute(builder: (_) => const WelcomeScreen()),
                             );
                           }
                         },
                         tooltip: 'Kembali',
-                        icon: const Icon(
-                          Icons.arrow_back_rounded,
-                          color: AppColors.courtInk,
-                        ),
+                        icon: const Icon(Icons.arrow_back_rounded, color: AppColors.courtInk),
                       ),
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).push(
-                            RollUpPageRoute(
-                              page: const LoginScreen(),
-                            ),
+                            MaterialPageRoute(builder: (_) => const LoginScreen()),
                           );
                         },
                         style: TextButton.styleFrom(
@@ -202,9 +149,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 width: double.infinity,
                 decoration: const BoxDecoration(
                   color: AppColors.pureWhite,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(36),
-                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
                 ),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
@@ -261,7 +206,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             fontWeight: FontWeight.w500,
                             color: AppColors.courtInk,
                           ),
-                          decoration: _inputDecoration(hintText: 'Contoh: Budi Santoso'),
+                          decoration: authInputDecoration(hintText: 'Contoh: Budi Santoso'),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Nama lengkap wajib diisi';
@@ -288,7 +233,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             fontWeight: FontWeight.w500,
                             color: AppColors.courtInk,
                           ),
-                          decoration: _inputDecoration(hintText: 'penyewa@sportbook.id'),
+                          decoration: authInputDecoration(hintText: 'penyewa@sportbook.id'),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Email wajib diisi';
@@ -318,14 +263,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             fontWeight: FontWeight.w500,
                             color: AppColors.courtInk,
                           ),
-                          decoration: _inputDecoration(
+                          decoration: authInputDecoration(
                             hintText: 'Minimal 6 karakter',
                             suffixIcon: IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
+                              onPressed: () =>
+                                  setState(() => _obscurePassword = !_obscurePassword),
                               tooltip: _obscurePassword
                                   ? 'Tampilkan kata sandi'
                                   : 'Sembunyikan kata sandi',
@@ -367,7 +309,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             fontWeight: FontWeight.w500,
                             color: AppColors.courtInk,
                           ),
-                          decoration: _inputDecoration(hintText: 'Ulangi kata sandi'),
+                          decoration: authInputDecoration(hintText: 'Ulangi kata sandi'),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Konfirmasi kata sandi wajib diisi';

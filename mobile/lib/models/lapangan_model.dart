@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+import 'package:geolocator/geolocator.dart';
 import '../core/api_config.dart';
 
 class LapanganModel {
@@ -33,29 +33,19 @@ class LapanganModel {
 
   double? calculateDistanceInMeters(double userLat, double userLon) {
     if (!hasCoordinates) return null;
-    const double p = 0.017453292519943295; // Math.PI / 180
-    final double a = 0.5 -
-        math.cos((latitude! - userLat) * p) / 2 +
-        math.cos(userLat * p) *
-            math.cos(latitude! * p) *
-            (1 - math.cos((longitude! - userLon) * p)) /
-            2;
-    return 12742000 * math.asin(math.sqrt(a));
+    return Geolocator.distanceBetween(userLat, userLon, latitude!, longitude!);
   }
 
   static String formatDistance(double distanceInMeters) {
     if (distanceInMeters < 1000) {
       return '${distanceInMeters.round()} m';
     }
-    final km = distanceInMeters / 1000;
-    return '${km.toStringAsFixed(1)} km';
+    return '${(distanceInMeters / 1000).toStringAsFixed(1)} km';
   }
 
   factory LapanganModel.fromJson(Map<String, dynamic> json) {
     return LapanganModel(
-      id: json['id'] is int
-          ? json['id'] as int
-          : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
       idKategori: json['id_kategori'] != null
           ? int.tryParse(json['id_kategori'].toString())
           : null,

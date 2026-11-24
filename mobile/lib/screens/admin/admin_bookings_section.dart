@@ -90,15 +90,11 @@ class _AdminBookingsSectionState extends State<AdminBookingsSection> {
                         IconButton(
                           onPressed: () => Navigator.of(sheetContext).pop(),
                           tooltip: 'Tutup',
-                          icon: const Icon(
-                            Icons.close_rounded,
-                            color: AppColors.courtInk,
-                          ),
+                          icon: const Icon(Icons.close_rounded, color: AppColors.courtInk),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
-
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
@@ -136,8 +132,7 @@ class _AdminBookingsSectionState extends State<AdminBookingsSection> {
                           const SizedBox(height: 6),
                           AdminInfoRow(
                             label: 'Lapangan',
-                            value:
-                                '${booking.namaLapangan} (${booking.jenisOlahraga})',
+                            value: '${booking.namaLapangan} (${booking.jenisOlahraga})',
                           ),
                           const SizedBox(height: 6),
                           AdminInfoRow(
@@ -154,7 +149,6 @@ class _AdminBookingsSectionState extends State<AdminBookingsSection> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 16),
                     const Text(
                       'Foto Bukti Bayar',
@@ -165,111 +159,10 @@ class _AdminBookingsSectionState extends State<AdminBookingsSection> {
                       ),
                     ),
                     const SizedBox(height: 8),
-
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.fieldMist,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.borderSubtle),
-                      ),
-                      child: booking.hasBuktiBayar
-                          ? Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: SizedBox(
-                                    width: double.infinity,
-                                    height: 175,
-                                    child: Image.network(
-                                      booking.fullBuktiBayarUrl!,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Container(
-                                        color: AppColors.pureWhite,
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            const Icon(
-                                              Icons.receipt_long_rounded,
-                                              size: 40,
-                                              color: AppColors.turfGreenDark,
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              booking.buktiBayarFileName,
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w700,
-                                                color: AppColors.courtInk,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            const Text(
-                                              'Lampiran bukti transfer tersedia',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: AppColors.textMuted,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.verified_rounded,
-                                      size: 18,
-                                      color: AppColors.turfGreenDark,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'File: ${booking.buktiBayarFileName}',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.courtInk,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            )
-                          : const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 12),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.warning_amber_rounded,
-                                    color: AppColors.errorInk,
-                                    size: 22,
-                                  ),
-                                  SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      'Penyewa belum mengunggah foto bukti bayar.',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.courtInk,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                    BookingReceiptBox(
+                      booking: booking,
+                      emptyMessage: 'Penyewa belum mengunggah foto bukti bayar.',
                     ),
-
                     const SizedBox(height: 18),
                     const Text(
                       'Ubah Status Pesanan',
@@ -285,63 +178,20 @@ class _AdminBookingsSectionState extends State<AdminBookingsSection> {
                       runSpacing: 8,
                       children: _statusOptions.map((st) {
                         final isSelected = selectedStatus == st;
-                        return Material(
-                          color: isSelected
-                              ? AppColors.courtInk
-                              : AppColors.fieldMist,
-                          borderRadius: BorderRadius.circular(18),
-                          child: InkWell(
-                            onTap: () {
-                              setModalState(() {
-                                selectedStatus = st;
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(18),
-                            child: Container(
-                              constraints: const BoxConstraints(minHeight: 44),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? AppColors.courtInk
-                                      : AppColors.borderSubtle,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    isSelected
-                                        ? Icons.radio_button_checked_rounded
-                                        : Icons.radio_button_off_rounded,
-                                    size: 16,
-                                    color: isSelected
-                                        ? AppColors.turfGreen
-                                        : AppColors.textMuted,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    st,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w800,
-                                      color: isSelected
-                                          ? AppColors.pureWhite
-                                          : AppColors.courtInk,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        return ChoiceChip(
+                          label: Text(st),
+                          selected: isSelected,
+                          selectedColor: AppColors.courtInk,
+                          backgroundColor: AppColors.fieldMist,
+                          labelStyle: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: isSelected ? AppColors.pureWhite : AppColors.courtInk,
                           ),
+                          onSelected: (_) => setModalState(() => selectedStatus = st),
                         );
                       }).toList(),
                     ),
-
                     const SizedBox(height: 20),
                     Row(
                       children: [
@@ -370,9 +220,7 @@ class _AdminBookingsSectionState extends State<AdminBookingsSection> {
                                 ),
                               ),
                               style: OutlinedButton.styleFrom(
-                                side: const BorderSide(
-                                  color: AppColors.errorInk,
-                                ),
+                                side: const BorderSide(color: AppColors.errorInk),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(24),
                                 ),
@@ -389,10 +237,7 @@ class _AdminBookingsSectionState extends State<AdminBookingsSection> {
                               onPressed: isSaving
                                   ? null
                                   : () async {
-                                      setModalState(() {
-                                        isSaving = true;
-                                      });
-
+                                      setModalState(() => isSaving = true);
                                       final result =
                                           await BookingService.updateBookingStatus(
                                         bookingId: booking.id,
@@ -400,31 +245,25 @@ class _AdminBookingsSectionState extends State<AdminBookingsSection> {
                                       );
 
                                       if (!sheetContext.mounted) return;
-                                      setModalState(() {
-                                        isSaving = false;
-                                      });
+                                      setModalState(() => isSaving = false);
 
                                       if (result.success) {
                                         Navigator.of(sheetContext).pop();
                                         if (mounted) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
+                                          ScaffoldMessenger.of(context).showSnackBar(
                                             SnackBar(
                                               content: Text(result.message),
-                                              backgroundColor:
-                                                  AppColors.courtInk,
+                                              backgroundColor: AppColors.courtInk,
                                             ),
                                           );
                                           widget.onRefresh();
                                           widget.onDataChanged?.call();
                                         }
                                       } else {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
+                                        ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
                                             content: Text(result.message),
-                                            backgroundColor:
-                                                AppColors.errorInk,
+                                            backgroundColor: AppColors.errorInk,
                                           ),
                                         );
                                       }
@@ -476,10 +315,7 @@ class _AdminBookingsSectionState extends State<AdminBookingsSection> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
           'Hapus Data Pesanan?',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            color: AppColors.courtInk,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.courtInk),
         ),
         content: Text(
           'Apakah Anda yakin ingin menghapus data pesanan #SB-${booking.id.toString().padLeft(3, '0')} (${booking.namaLapangan} - ${booking.namaPenyewa ?? 'User #${booking.userId}'})? Tindakan ini tidak dapat dibatalkan.',
@@ -490,10 +326,7 @@ class _AdminBookingsSectionState extends State<AdminBookingsSection> {
             onPressed: () => Navigator.of(ctx).pop(false),
             child: const Text(
               'Batal',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: AppColors.courtInk,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.courtInk),
             ),
           ),
           ElevatedButton(
@@ -503,10 +336,7 @@ class _AdminBookingsSectionState extends State<AdminBookingsSection> {
               foregroundColor: AppColors.pureWhite,
               elevation: 0,
             ),
-            child: const Text(
-              'Ya, Hapus',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
+            child: const Text('Ya, Hapus', style: TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -519,8 +349,7 @@ class _AdminBookingsSectionState extends State<AdminBookingsSection> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(result.message),
-        backgroundColor:
-            result.success ? AppColors.courtInk : AppColors.errorInk,
+        backgroundColor: result.success ? AppColors.courtInk : AppColors.errorInk,
       ),
     );
     if (result.success) {
@@ -550,24 +379,16 @@ class _AdminBookingsSectionState extends State<AdminBookingsSection> {
                 color: selected ? AppColors.courtInk : AppColors.fieldMist,
                 borderRadius: BorderRadius.circular(18),
                 child: InkWell(
-                  onTap: () {
-                    setState(() {
-                      _bookingStatusFilter = f;
-                    });
-                  },
+                  onTap: () => setState(() => _bookingStatusFilter = f),
                   borderRadius: BorderRadius.circular(18),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 7,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                     child: Text(
                       '$f ($count)',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
-                        color:
-                            selected ? AppColors.pureWhite : AppColors.courtInk,
+                        color: selected ? AppColors.pureWhite : AppColors.courtInk,
                       ),
                     ),
                   ),
@@ -579,15 +400,10 @@ class _AdminBookingsSectionState extends State<AdminBookingsSection> {
           if (widget.isLoading)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 48),
-              child: Center(
-                child: CircularProgressIndicator(color: AppColors.courtInk),
-              ),
+              child: Center(child: CircularProgressIndicator(color: AppColors.courtInk)),
             )
           else if (widget.errorMessage != null)
-            AdminErrorState(
-              message: widget.errorMessage!,
-              onRetry: widget.onRefresh,
-            )
+            AdminErrorState(message: widget.errorMessage!, onRetry: widget.onRefresh)
           else if (filtered.isEmpty)
             AdminEmptyState(
               icon: Icons.inbox_rounded,
@@ -631,8 +447,7 @@ class AdminBookingItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tenantText = (booking.namaPenyewa != null &&
-            booking.namaPenyewa!.isNotEmpty)
+    final tenantText = (booking.namaPenyewa != null && booking.namaPenyewa!.isNotEmpty)
         ? '${booking.namaPenyewa} (${booking.emailPenyewa ?? '-'})'
         : 'Penyewa #${booking.userId}';
 
@@ -687,7 +502,7 @@ class AdminBookingItemCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              BookingStatusBadge(status: booking.statusLabel),
+              BookingStatusBadge(status: booking.normalizedStatus),
             ],
           ),
           const SizedBox(height: 12),
@@ -775,10 +590,7 @@ class AdminBookingItemCard extends StatelessWidget {
                       minimumSize: const Size(40, 40),
                       padding: EdgeInsets.zero,
                     ),
-                    icon: const Icon(
-                      Icons.delete_outline_rounded,
-                      size: 19,
-                    ),
+                    icon: const Icon(Icons.delete_outline_rounded, size: 19),
                   ),
                   const SizedBox(width: 8),
                   SizedBox(
@@ -788,10 +600,7 @@ class AdminBookingItemCard extends StatelessWidget {
                       icon: const Icon(Icons.fact_check_outlined, size: 16),
                       label: const Text(
                         'Cek Bukti & Status',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.turfGreen,

@@ -29,26 +29,17 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _submitLogin() async {
-    setState(() {
-      _errorMessage = null;
-    });
-
+    setState(() => _errorMessage = null);
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isLoading = true);
     final result = await AuthService.login(
       email: _emailController.text,
       password: _passwordController.text,
     );
 
     if (!mounted) return;
-
-    setState(() {
-      _isLoading = false;
-    });
+    setState(() => _isLoading = false);
 
     if (result.success && result.user != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -58,13 +49,11 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
       Navigator.of(context).pushAndRemoveUntil(
-        RollUpPageRoute(page: HomeScreen(user: result.user!)),
+        MaterialPageRoute(builder: (_) => HomeScreen(user: result.user!)),
         (route) => false,
       );
     } else {
-      setState(() {
-        _errorMessage = result.message;
-      });
+      setState(() => _errorMessage = result.message);
     }
   }
 
@@ -91,24 +80,17 @@ class _LoginScreenState extends State<LoginScreen> {
                             Navigator.of(context).popUntil((route) => route.isFirst);
                           } else {
                             Navigator.of(context).pushReplacement(
-                              RollUpPageRoute(
-                                page: const WelcomeScreen(),
-                              ),
+                              MaterialPageRoute(builder: (_) => const WelcomeScreen()),
                             );
                           }
                         },
                         tooltip: 'Kembali',
-                        icon: const Icon(
-                          Icons.arrow_back_rounded,
-                          color: AppColors.courtInk,
-                        ),
+                        icon: const Icon(Icons.arrow_back_rounded, color: AppColors.courtInk),
                       ),
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).push(
-                            RollUpPageRoute(
-                              page: const RegisterScreen(),
-                            ),
+                            MaterialPageRoute(builder: (_) => const RegisterScreen()),
                           );
                         },
                         style: TextButton.styleFrom(
@@ -162,9 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 width: double.infinity,
                 decoration: const BoxDecoration(
                   color: AppColors.pureWhite,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(36),
-                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
                 ),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
@@ -222,33 +202,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             fontWeight: FontWeight.w500,
                             color: AppColors.courtInk,
                           ),
-                          decoration: InputDecoration(
+                          decoration: authInputDecoration(
                             hintText: 'Masukkan email terdaftar',
-                            hintStyle: const TextStyle(
-                              color: AppColors.textMuted,
-                              fontWeight: FontWeight.w400,
-                            ),
-                            filled: true,
-                            fillColor: AppColors.fieldMist,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 18,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(28),
-                              borderSide: const BorderSide(color: AppColors.borderSubtle),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(28),
-                              borderSide: const BorderSide(color: AppColors.borderSubtle),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(28),
-                              borderSide: const BorderSide(
-                                color: AppColors.courtInk,
-                                width: 2,
-                              ),
-                            ),
                           ),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
@@ -280,24 +235,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             fontWeight: FontWeight.w500,
                             color: AppColors.courtInk,
                           ),
-                          decoration: InputDecoration(
+                          decoration: authInputDecoration(
                             hintText: 'Masukkan kata sandi',
-                            hintStyle: const TextStyle(
-                              color: AppColors.textMuted,
-                              fontWeight: FontWeight.w400,
-                            ),
-                            filled: true,
-                            fillColor: AppColors.fieldMist,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 18,
-                            ),
                             suffixIcon: IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
+                              onPressed: () =>
+                                  setState(() => _obscurePassword = !_obscurePassword),
                               tooltip: _obscurePassword
                                   ? 'Tampilkan kata sandi'
                                   : 'Sembunyikan kata sandi',
@@ -306,21 +248,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ? Icons.visibility_outlined
                                     : Icons.visibility_off_outlined,
                                 color: AppColors.courtInk,
-                              ),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(28),
-                              borderSide: const BorderSide(color: AppColors.borderSubtle),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(28),
-                              borderSide: const BorderSide(color: AppColors.borderSubtle),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(28),
-                              borderSide: const BorderSide(
-                                color: AppColors.courtInk,
-                                width: 2,
                               ),
                             ),
                           ),

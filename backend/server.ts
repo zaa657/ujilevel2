@@ -2,7 +2,6 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
-import { initDatabase } from './config/db';
 import { getStaticUploadDirs } from './config/paths';
 import authRoutes from './routes/authRoutes';
 import kategoriRoutes from './routes/kategoriRoutes';
@@ -21,15 +20,6 @@ app.use(express.urlencoded({ extended: true }));
 for (const dir of getStaticUploadDirs()) {
   app.use('/uploads', express.static(dir));
 }
-
-let dbInitPromise: Promise<void> | null = null;
-app.use(async (_req: Request, _res: Response, next: NextFunction) => {
-  if (!dbInitPromise) {
-    dbInitPromise = initDatabase();
-  }
-  await dbInitPromise;
-  next();
-});
 
 app.get('/', (_req: Request, res: Response) => {
   res.status(200).json({
@@ -59,12 +49,8 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 if (require.main === module) {
-  app.listen(PORT, '0.0.0.0', async () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server listening on port ${PORT}`);
-    if (!dbInitPromise) {
-      dbInitPromise = initDatabase();
-    }
-    await dbInitPromise;
   });
 }
 

@@ -11,25 +11,6 @@ import 'admin_common_widgets.dart';
 import 'admin_kategori_section.dart';
 import 'admin_lapangan_section.dart';
 
-class AdminDashboardScreen extends StatelessWidget {
-  final UserModel user;
-
-  const AdminDashboardScreen({
-    super.key,
-    required this.user,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ResponsiveContainer(
-      backgroundColor: AppColors.pureWhite,
-      child: AdminManagementView(
-        user: user,
-      ),
-    );
-  }
-}
-
 class AdminManagementView extends StatefulWidget {
   final UserModel user;
   final VoidCallback? onDataChanged;
@@ -89,8 +70,7 @@ class _AdminManagementViewState extends State<AdminManagementView> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _bookingsError =
-            'Gagal memuat daftar pesanan masuk. Pastikan server backend aktif.';
+        _bookingsError = 'Gagal memuat daftar pesanan masuk. Pastikan server backend aktif.';
         _isLoadingBookings = false;
       });
     }
@@ -111,8 +91,7 @@ class _AdminManagementViewState extends State<AdminManagementView> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _lapanganError =
-            'Gagal memuat daftar lapangan. Pastikan server backend aktif.';
+        _lapanganError = 'Gagal memuat daftar lapangan. Pastikan server backend aktif.';
         _isLoadingLapangan = false;
       });
     }
@@ -133,11 +112,15 @@ class _AdminManagementViewState extends State<AdminManagementView> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _kategoriError =
-            'Gagal memuat daftar kategori olahraga. Pastikan server backend aktif.';
+        _kategoriError = 'Gagal memuat daftar kategori olahraga. Pastikan server backend aktif.';
         _isLoadingKategori = false;
       });
     }
+  }
+
+  void _handleSectionChanged() {
+    _refreshAllData();
+    widget.onDataChanged?.call();
   }
 
   @override
@@ -149,9 +132,7 @@ class _AdminManagementViewState extends State<AdminManagementView> {
           width: double.infinity,
           decoration: const BoxDecoration(
             color: AppColors.turfGreen,
-            borderRadius: BorderRadius.vertical(
-              bottom: Radius.circular(28),
-            ),
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
           ),
           child: SafeArea(
             bottom: false,
@@ -190,10 +171,7 @@ class _AdminManagementViewState extends State<AdminManagementView> {
                       IconButton(
                         onPressed: _refreshAllData,
                         tooltip: 'Muat ulang data admin',
-                        icon: const Icon(
-                          Icons.refresh_rounded,
-                          color: AppColors.courtInk,
-                        ),
+                        icon: const Icon(Icons.refresh_rounded, color: AppColors.courtInk),
                       ),
                     ],
                   ),
@@ -233,7 +211,6 @@ class _AdminManagementViewState extends State<AdminManagementView> {
             ),
           ),
         ),
-
         Expanded(
           child: IndexedStack(
             index: _activeSection,
@@ -243,10 +220,7 @@ class _AdminManagementViewState extends State<AdminManagementView> {
                 isLoading: _isLoadingBookings,
                 errorMessage: _bookingsError,
                 onRefresh: _loadBookings,
-                onDataChanged: () {
-                  _refreshAllData();
-                  widget.onDataChanged?.call();
-                },
+                onDataChanged: _handleSectionChanged,
               ),
               AdminLapanganSection(
                 lapanganList: _lapanganList,
@@ -254,20 +228,14 @@ class _AdminManagementViewState extends State<AdminManagementView> {
                 isLoading: _isLoadingLapangan,
                 errorMessage: _lapanganError,
                 onRefresh: _loadLapangan,
-                onDataChanged: () {
-                  _refreshAllData();
-                  widget.onDataChanged?.call();
-                },
+                onDataChanged: _handleSectionChanged,
               ),
               AdminKategoriSection(
                 kategoriList: _kategoriList,
                 isLoading: _isLoadingKategori,
                 errorMessage: _kategoriError,
                 onRefresh: _loadKategori,
-                onDataChanged: () {
-                  _refreshAllData();
-                  widget.onDataChanged?.call();
-                },
+                onDataChanged: _handleSectionChanged,
               ),
             ],
           ),

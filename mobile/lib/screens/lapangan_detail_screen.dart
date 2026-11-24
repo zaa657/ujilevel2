@@ -5,14 +5,13 @@ import '../core/app_theme.dart';
 import '../core/image_picker_helper.dart';
 import '../models/lapangan_model.dart';
 import '../services/booking_service.dart';
+import '../widgets/court_widgets.dart';
+
+export '../widgets/court_widgets.dart';
 
 class LapanganDetailScreen extends StatefulWidget {
   final LapanganModel lapangan;
-
-  const LapanganDetailScreen({
-    super.key,
-    required this.lapangan,
-  });
+  const LapanganDetailScreen({super.key, required this.lapangan});
 
   @override
   State<LapanganDetailScreen> createState() => _LapanganDetailScreenState();
@@ -22,26 +21,19 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
   late DateTime _selectedDate;
   String _selectedJamMulai = '10:00';
   int _durasiJam = 1;
-
   Uint8List? _buktiBayarBytes;
   String? _buktiBayarFileName;
-
   bool _isSubmitting = false;
   String? _errorMessage;
 
-  static const List<String> _availableHours = [
-    '08:00',
-    '09:00',
-    '10:00',
-    '11:00',
-    '13:00',
-    '14:00',
-    '15:00',
-    '16:00',
-    '17:00',
-    '19:00',
-    '20:00',
-    '21:00',
+  static const _availableHours = [
+    '08:00', '09:00', '10:00', '11:00', '13:00', '14:00',
+    '15:00', '16:00', '17:00', '19:00', '20:00', '21:00',
+  ];
+
+  static const _months = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
   ];
 
   @override
@@ -50,39 +42,21 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
     _selectedDate = DateTime.now().add(const Duration(days: 1));
   }
 
-  String get _formattedTanggalSewa {
-    final y = _selectedDate.year.toString().padLeft(4, '0');
-    final m = _selectedDate.month.toString().padLeft(2, '0');
-    final d = _selectedDate.day.toString().padLeft(2, '0');
-    return '$y-$m-$d';
-  }
+  String get _formattedTanggalSewa =>
+      '${_selectedDate.year.toString().padLeft(4, '0')}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
 
-  String get _formattedReadableDate {
-    const months = [
-      'Januari',
-      'Februari',
-      'Maret',
-      'April',
-      'Mei',
-      'Juni',
-      'Juli',
-      'Agustus',
-      'September',
-      'Oktober',
-      'November',
-      'Desember',
-    ];
-    return '${_selectedDate.day} ${months[_selectedDate.month - 1]} ${_selectedDate.year}';
-  }
+  String get _formattedReadableDate =>
+      '${_selectedDate.day} ${_months[_selectedDate.month - 1]} ${_selectedDate.year}';
 
   String get _calculatedEndHour {
-    final parts = _selectedJamMulai.split(':');
-    final startHour = int.tryParse(parts.first) ?? 10;
-    final endHour = (startHour + _durasiJam).clamp(0, 24);
-    return '${endHour.toString().padLeft(2, '0')}:00';
+    final startHour = int.tryParse(_selectedJamMulai.split(':').first) ?? 10;
+    return '${(startHour + _durasiJam).clamp(0, 24).toString().padLeft(2, '0')}:00';
   }
 
   double get _totalHarga => widget.lapangan.hargaPerJam * _durasiJam;
+
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
@@ -92,29 +66,21 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
       firstDate: DateTime(now.year, now.month, now.day),
       lastDate: now.add(const Duration(days: 90)),
     );
-    if (picked != null && mounted) {
-      setState(() {
-        _selectedDate = picked;
-      });
-    }
+    if (picked != null && mounted) setState(() => _selectedDate = picked);
   }
 
   Future<void> _pickBuktiFromDeviceDirectly() async {
     final picked = await ImagePickerHelper.pickImage();
-    if (!mounted) return;
-    if (picked != null) {
-      if (picked.bytes.lengthInBytes > 2 * 1024 * 1024) {
-        setState(() {
-          _errorMessage = 'Ukuran file bukti bayar maksimal 2 MB.';
-        });
-        return;
-      }
-      setState(() {
-        _buktiBayarBytes = picked.bytes;
-        _buktiBayarFileName = picked.fileName;
-        _errorMessage = null;
-      });
+    if (!mounted || picked == null) return;
+    if (picked.bytes.lengthInBytes > 2 * 1024 * 1024) {
+      setState(() => _errorMessage = 'Ukuran file bukti bayar maksimal 2 MB.');
+      return;
     }
+    setState(() {
+      _buktiBayarBytes = picked.bytes;
+      _buktiBayarFileName = picked.fileName;
+      _errorMessage = null;
+    });
   }
 
   Future<void> _submitBooking() async {
@@ -133,31 +99,21 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
     );
 
     if (!mounted) return;
-
-    setState(() {
-      _isSubmitting = false;
-    });
+    setState(() => _isSubmitting = false);
 
     if (result.success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.message),
-          backgroundColor: AppColors.courtInk,
-        ),
+        SnackBar(content: Text(result.message), backgroundColor: AppColors.courtInk),
       );
       Navigator.of(context).pop(true);
     } else {
-      setState(() {
-        _errorMessage = result.message;
-      });
+      setState(() => _errorMessage = result.message);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final lap = widget.lapangan;
-    final subtotal = lap.hargaPerJam * _durasiJam;
-
     return ResponsiveContainer(
       backgroundColor: AppColors.pureWhite,
       child: Column(
@@ -180,10 +136,7 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
                       SafeArea(
                         bottom: false,
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -194,29 +147,15 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
                                 child: IconButton(
                                   onPressed: () => Navigator.of(context).pop(false),
                                   tooltip: 'Kembali ke Katalog',
-                                  icon: const Icon(
-                                    Icons.arrow_back_ios_new_rounded,
-                                    size: 18,
-                                    color: AppColors.courtInk,
-                                  ),
+                                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.courtInk),
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.turfGreen,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(color: AppColors.turfGreen, borderRadius: BorderRadius.circular(20)),
                                 child: Text(
                                   lap.jenisOlahraga,
-                                  style: const TextStyle(
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.courtInk,
-                                  ),
+                                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: AppColors.courtInk),
                                 ),
                               ),
                             ],
@@ -225,51 +164,32 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
                       ),
                     ],
                   ),
-
                   Padding(
                     padding: const EdgeInsets.fromLTRB(22, 20, 22, 16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (lap.keteranganKategori != null &&
-                            lap.keteranganKategori!.isNotEmpty) ...[
+                        if (lap.keteranganKategori != null && lap.keteranganKategori!.isNotEmpty) ...[
                           Text(
                             lap.keteranganKategori!,
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.turfGreenDark,
-                            ),
+                            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.turfGreenDark),
                           ),
                           const SizedBox(height: 4),
                         ],
                         Text(
                           lap.namaLapangan,
-                          style: const TextStyle(
-                            fontSize: 23,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.courtInk,
-                            height: 1.2,
-                          ),
+                          style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800, color: AppColors.courtInk, height: 1.2),
                         ),
                         if (lap.alamat != null && lap.alamat!.isNotEmpty) ...[
                           const SizedBox(height: 6),
                           Row(
                             children: [
-                              const Icon(
-                                Icons.place_outlined,
-                                size: 16,
-                                color: AppColors.turfGreenDark,
-                              ),
+                              const Icon(Icons.place_outlined, size: 16, color: AppColors.turfGreenDark),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
                                   lap.alamat!,
-                                  style: const TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textMuted,
-                                  ),
+                                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppColors.textMuted),
                                 ),
                               ),
                             ],
@@ -282,21 +202,10 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
                           children: [
                             Text(
                               ApiConfig.formatRupiah(lap.hargaPerJam),
-                              style: const TextStyle(
-                                fontSize: 21,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.turfGreenDark,
-                              ),
+                              style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900, color: AppColors.turfGreenDark),
                             ),
                             const SizedBox(width: 6),
-                            const Text(
-                              '/ jam',
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textMuted,
-                              ),
-                            ),
+                            const Text('/ jam', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppColors.textMuted)),
                           ],
                         ),
                         const SizedBox(height: 14),
@@ -304,57 +213,32 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
                           lap.deskripsi.isNotEmpty
                               ? lap.deskripsi
                               : 'Lapangan olahraga siap pakai untuk jadwal latihan maupun pertandingan.',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            height: 1.5,
-                            color: AppColors.textMuted,
-                          ),
+                          style: const TextStyle(fontSize: 14, height: 1.5, color: AppColors.textMuted),
                         ),
                       ],
                     ),
                   ),
-
                   const Divider(color: AppColors.borderSubtle, height: 1),
-
                   Padding(
                     padding: const EdgeInsets.fromLTRB(22, 20, 22, 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Your Booking',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.courtInk,
-                          ),
-                        ),
+                        const Text('Your Booking', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.courtInk)),
                         const SizedBox(height: 16),
-
                         if (_errorMessage != null) ...[
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: AppColors.errorSurface,
-                              borderRadius: BorderRadius.circular(14),
-                            ),
+                            decoration: BoxDecoration(color: AppColors.errorSurface, borderRadius: BorderRadius.circular(14)),
                             child: Row(
                               children: [
-                                const Icon(
-                                  Icons.error_outline_rounded,
-                                  color: AppColors.errorInk,
-                                  size: 20,
-                                ),
+                                const Icon(Icons.error_outline_rounded, color: AppColors.errorInk, size: 20),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     _errorMessage!,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.errorInk,
-                                    ),
+                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.errorInk),
                                   ),
                                 ),
                               ],
@@ -362,7 +246,6 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
                           ),
                           const SizedBox(height: 16),
                         ],
-
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -370,40 +253,21 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    'Tanggal Sewa',
-                                    style: TextStyle(
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.courtInk,
-                                    ),
-                                  ),
+                                  const Text('Tanggal Sewa', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.courtInk)),
                                   const SizedBox(height: 4),
                                   Text(
                                     '$_formattedReadableDate ($_formattedTanggalSewa)',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      color: AppColors.textMuted,
-                                    ),
+                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textMuted),
                                   ),
                                 ],
                               ),
                             ),
                             TextButton(
                               onPressed: _pickDate,
-                              style: TextButton.styleFrom(
-                                foregroundColor: AppColors.courtInk,
-                                minimumSize: const Size(64, 44),
-                              ),
+                              style: TextButton.styleFrom(foregroundColor: AppColors.courtInk, minimumSize: const Size(64, 44)),
                               child: const Text(
                                 'Pilih Tanggal',
-                                style: TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w800,
-                                  decoration: TextDecoration.underline,
-                                  color: AppColors.courtInk,
-                                ),
+                                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, decoration: TextDecoration.underline, color: AppColors.courtInk),
                               ),
                             ),
                           ],
@@ -413,51 +277,25 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
                           spacing: 8,
                           runSpacing: 8,
                           children: [
-                            for (final offset in [
-                              (label: 'Hari Ini', days: 0),
-                              (label: 'Besok', days: 1),
-                              (label: 'Lusa', days: 2),
-                            ])
-                              _QuickChip(
+                            for (final offset in [(label: 'Hari Ini', days: 0), (label: 'Besok', days: 1), (label: 'Lusa', days: 2)])
+                              QuickSelectChip(
                                 label: offset.label,
-                                isSelected: _isSameDay(
-                                  _selectedDate,
-                                  DateTime.now().add(Duration(days: offset.days)),
-                                ),
-                                onTap: () {
-                                  setState(() {
-                                    _selectedDate = DateTime.now().add(
-                                      Duration(days: offset.days),
-                                    );
-                                  });
-                                },
+                                isSelected: _isSameDay(_selectedDate, DateTime.now().add(Duration(days: offset.days))),
+                                onTap: () => setState(() => _selectedDate = DateTime.now().add(Duration(days: offset.days))),
                               ),
                           ],
                         ),
-
                         const SizedBox(height: 20),
-
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Expanded(
-                              child: Text(
-                                'Jam Mulai',
-                                style: TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.courtInk,
-                                ),
-                              ),
+                              child: Text('Jam Mulai', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.courtInk)),
                             ),
                             const SizedBox(width: 8),
                             Text(
                               '$_selectedJamMulai - $_calculatedEndHour WIB',
-                              style: const TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.turfGreenDark,
-                              ),
+                              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.turfGreenDark),
                             ),
                           ],
                         ),
@@ -465,58 +303,33 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
-                          children: _availableHours.map((jam) {
-                            final selected = _selectedJamMulai == jam;
-                            return _QuickChip(
-                              label: jam,
-                              isSelected: selected,
-                              onTap: () {
-                                setState(() {
-                                  _selectedJamMulai = jam;
-                                });
-                              },
-                            );
-                          }).toList(),
+                          children: _availableHours
+                              .map((jam) => QuickSelectChip(
+                                    label: jam,
+                                    isSelected: _selectedJamMulai == jam,
+                                    onTap: () => setState(() => _selectedJamMulai = jam),
+                                  ))
+                              .toList(),
                         ),
-
                         const SizedBox(height: 20),
-
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Expanded(
-                              child: Text(
-                                'Durasi Sewa',
-                                style: TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.courtInk,
-                                ),
-                              ),
+                              child: Text('Durasi Sewa', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.courtInk)),
                             ),
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
-                                  onPressed: _durasiJam > 1
-                                      ? () => setState(() => _durasiJam--)
-                                      : null,
+                                  onPressed: _durasiJam > 1 ? () => setState(() => _durasiJam--) : null,
                                   tooltip: 'Kurangi durasi',
                                   icon: const Icon(Icons.remove_circle_outline_rounded),
                                   color: AppColors.courtInk,
                                 ),
-                                Text(
-                                  '$_durasiJam Jam',
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.courtInk,
-                                  ),
-                                ),
+                                Text('$_durasiJam Jam', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.courtInk)),
                                 IconButton(
-                                  onPressed: _durasiJam < 8
-                                      ? () => setState(() => _durasiJam++)
-                                      : null,
+                                  onPressed: _durasiJam < 8 ? () => setState(() => _durasiJam++) : null,
                                   tooltip: 'Tambah durasi',
                                   icon: const Icon(Icons.add_circle_outline_rounded),
                                   color: AppColors.courtInk,
@@ -529,29 +342,16 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
-                          children: [1, 2, 3, 4].map((jam) {
-                            return _QuickChip(
-                              label: '$jam Jam',
-                              isSelected: _durasiJam == jam,
-                              onTap: () {
-                                setState(() {
-                                  _durasiJam = jam;
-                                });
-                              },
-                            );
-                          }).toList(),
+                          children: [1, 2, 3, 4]
+                              .map((jam) => QuickSelectChip(
+                                    label: '$jam Jam',
+                                    isSelected: _durasiJam == jam,
+                                    onTap: () => setState(() => _durasiJam = jam),
+                                  ))
+                              .toList(),
                         ),
-
                         const SizedBox(height: 22),
-
-                        const Text(
-                          'Bukti Pembayaran',
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.courtInk,
-                          ),
-                        ),
+                        const Text('Bukti Pembayaran', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.courtInk)),
                         const SizedBox(height: 8),
                         Container(
                           width: double.infinity,
@@ -570,37 +370,17 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
                                         Container(
                                           width: 44,
                                           height: 44,
-                                          decoration: BoxDecoration(
-                                            color: AppColors.pureWhite,
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                          child: const Icon(
-                                            Icons.photo_library_outlined,
-                                            color: AppColors.courtInk,
-                                          ),
+                                          decoration: BoxDecoration(color: AppColors.pureWhite, borderRadius: BorderRadius.circular(12)),
+                                          child: const Icon(Icons.photo_library_outlined, color: AppColors.courtInk),
                                         ),
                                         const SizedBox(width: 12),
                                         const Expanded(
                                           child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Text(
-                                                'Belum ada foto bukti bayar',
-                                                style: TextStyle(
-                                                  fontSize: 13.5,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: AppColors.courtInk,
-                                                ),
-                                              ),
+                                              Text('Belum ada foto bukti bayar', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.courtInk)),
                                               SizedBox(height: 2),
-                                              Text(
-                                                'Pilih foto struk transfer dari Galeri atau File (JPG/PNG)',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: AppColors.textMuted,
-                                                ),
-                                              ),
+                                              Text('Pilih foto struk transfer dari Galeri atau File (JPG/PNG)', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
                                             ],
                                           ),
                                         ),
@@ -612,25 +392,13 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
                                       height: 46,
                                       child: ElevatedButton.icon(
                                         onPressed: _pickBuktiFromDeviceDirectly,
-                                        icon: const Icon(
-                                          Icons.folder_open_rounded,
-                                          size: 18,
-                                        ),
-                                        label: const Text(
-                                          'Pilih dari Galeri / File',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        ),
+                                        icon: const Icon(Icons.folder_open_rounded, size: 18),
+                                        label: const Text('Pilih dari Galeri / File', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: AppColors.courtInk,
                                           foregroundColor: AppColors.pureWhite,
                                           elevation: 0,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(14),
-                                          ),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                         ),
                                       ),
                                     ),
@@ -640,12 +408,7 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
                                   children: [
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(10),
-                                      child: Image.memory(
-                                        _buktiBayarBytes!,
-                                        width: 52,
-                                        height: 52,
-                                        fit: BoxFit.cover,
-                                      ),
+                                      child: Image.memory(_buktiBayarBytes!, width: 52, height: 52, fit: BoxFit.cover),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
@@ -656,63 +419,35 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
                                             _buktiBayarFileName ?? 'bukti_bayar.png',
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              fontSize: 13.5,
-                                              fontWeight: FontWeight.w700,
-                                              color: AppColors.courtInk,
-                                            ),
+                                            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.courtInk),
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
                                             '${(_buktiBayarBytes!.lengthInBytes / 1024).toStringAsFixed(1)} KB siap dikirim',
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                              color: AppColors.turfGreenDark,
-                                            ),
+                                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.turfGreenDark),
                                           ),
                                         ],
                                       ),
                                     ),
                                     TextButton(
                                       onPressed: _pickBuktiFromDeviceDirectly,
-                                      child: const Text(
-                                        'Ganti',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.courtInk,
-                                        ),
-                                      ),
+                                      child: const Text('Ganti', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.courtInk)),
                                     ),
                                     IconButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          _buktiBayarBytes = null;
-                                          _buktiBayarFileName = null;
-                                        });
-                                      },
+                                      onPressed: () => setState(() {
+                                        _buktiBayarBytes = null;
+                                        _buktiBayarFileName = null;
+                                      }),
                                       tooltip: 'Hapus bukti bayar',
-                                      icon: const Icon(
-                                        Icons.delete_outline_rounded,
-                                        color: AppColors.errorInk,
-                                      ),
+                                      icon: const Icon(Icons.delete_outline_rounded, color: AppColors.errorInk),
                                     ),
                                   ],
                                 ),
                         ),
-
                         const SizedBox(height: 24),
                         const Divider(color: AppColors.borderSubtle, height: 1),
                         const SizedBox(height: 18),
-
-                        const Text(
-                          'Price details',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.courtInk,
-                          ),
-                        ),
+                        const Text('Price details', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.courtInk)),
                         const SizedBox(height: 12),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -720,20 +455,13 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
                             Expanded(
                               child: Text(
                                 'Harga Sewa (${ApiConfig.formatRupiah(lap.hargaPerJam)} x $_durasiJam jam)',
-                                style: const TextStyle(
-                                  fontSize: 13.5,
-                                  color: AppColors.textMuted,
-                                ),
+                                style: const TextStyle(fontSize: 13.5, color: AppColors.textMuted),
                               ),
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              ApiConfig.formatRupiah(subtotal),
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.courtInk,
-                              ),
+                              ApiConfig.formatRupiah(_totalHarga),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.courtInk),
                             ),
                           ],
                         ),
@@ -742,23 +470,12 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Expanded(
-                              child: Text(
-                                'Total Harga (total_harga)',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.courtInk,
-                                ),
-                              ),
+                              child: Text('Total Harga (total_harga)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.courtInk)),
                             ),
                             const SizedBox(width: 8),
                             Text(
                               ApiConfig.formatRupiah(_totalHarga),
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.turfGreenDark,
-                              ),
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.turfGreenDark),
                             ),
                           ],
                         ),
@@ -769,15 +486,12 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
               ),
             ),
           ),
-
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(22, 14, 22, 18),
             decoration: const BoxDecoration(
               color: AppColors.pureWhite,
-              border: Border(
-                top: BorderSide(color: AppColors.borderSubtle),
-              ),
+              border: Border(top: BorderSide(color: AppColors.borderSubtle)),
             ),
             child: SafeArea(
               top: false,
@@ -791,25 +505,17 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
                     foregroundColor: AppColors.pureWhite,
                     disabledBackgroundColor: AppColors.textMuted,
                     elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                   ),
                   child: _isSubmitting
                       ? const SizedBox(
                           width: 22,
                           height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: AppColors.pureWhite,
-                          ),
+                          child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.pureWhite),
                         )
                       : Text(
                           'Confirm & Booking (${ApiConfig.formatRupiah(_totalHarga)})',
-                          style: const TextStyle(
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.w800,
-                          ),
+                          style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800),
                         ),
                 ),
               ),
@@ -818,220 +524,5 @@ class _LapanganDetailScreenState extends State<LapanganDetailScreen> {
         ],
       ),
     );
-  }
-
-  bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
-  }
-}
-
-class _QuickChip extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _QuickChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: isSelected ? AppColors.turfGreen : AppColors.fieldMist,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 40),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isSelected ? AppColors.courtInk : AppColors.borderSubtle,
-              width: isSelected ? 1.5 : 1.0,
-            ),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-              color: AppColors.courtInk,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class CourtPhotoDisplay extends StatelessWidget {
-  final String? imageUrl;
-  final String jenisOlahraga;
-
-  const CourtPhotoDisplay({
-    super.key,
-    required this.imageUrl,
-    required this.jenisOlahraga,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (imageUrl != null && imageUrl!.isNotEmpty) {
-      return Image.network(
-        imageUrl!,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _CourtFallbackBanner(
-          jenisOlahraga: jenisOlahraga,
-        ),
-      );
-    }
-    return _CourtFallbackBanner(jenisOlahraga: jenisOlahraga);
-  }
-}
-
-class _CourtFallbackBanner extends StatelessWidget {
-  final String jenisOlahraga;
-
-  const _CourtFallbackBanner({required this.jenisOlahraga});
-
-  @override
-  Widget build(BuildContext context) {
-    final lower = jenisOlahraga.toLowerCase();
-    final Color surfaceColor;
-    if (lower.contains('badminton') || lower.contains('bulu')) {
-      surfaceColor = const Color(0xFF0F766E);
-    } else if (lower.contains('basket')) {
-      surfaceColor = const Color(0xFF1E3A8A);
-    } else if (lower.contains('tenis') || lower.contains('tennis')) {
-      surfaceColor = const Color(0xFF0369A1);
-    } else {
-      surfaceColor = const Color(0xFF15803D);
-    }
-
-    return CustomPaint(
-      painter: _CourtMarkingsPainter(surfaceColor: surfaceColor),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxWidth < 110) {
-            return Center(
-              child: Icon(
-                SportCategoryHelper.iconFor(jenisOlahraga),
-                color: AppColors.pureWhite,
-                size: 22,
-              ),
-            );
-          }
-          return Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.courtInk.withValues(alpha: 0.72),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    SportCategoryHelper.iconFor(jenisOlahraga),
-                    color: AppColors.turfGreen,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      jenisOlahraga,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.pureWhite,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _CourtMarkingsPainter extends CustomPainter {
-  final Color surfaceColor;
-
-  const _CourtMarkingsPainter({required this.surfaceColor});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, w, h),
-      Paint()..color = surfaceColor,
-    );
-
-    final linePaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.55)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5;
-
-    final outer = Rect.fromLTRB(w * 0.08, h * 0.12, w * 0.92, h * 0.88);
-    canvas.drawRect(outer, linePaint);
-    canvas.drawLine(Offset(w * 0.5, h * 0.12), Offset(w * 0.5, h * 0.88), linePaint);
-    canvas.drawCircle(Offset(w * 0.5, h * 0.5), h * 0.18, linePaint);
-    canvas.drawRect(
-      Rect.fromLTRB(w * 0.08, h * 0.30, w * 0.22, h * 0.70),
-      linePaint,
-    );
-    canvas.drawRect(
-      Rect.fromLTRB(w * 0.78, h * 0.30, w * 0.92, h * 0.70),
-      linePaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _CourtMarkingsPainter oldDelegate) {
-    return oldDelegate.surfaceColor != surfaceColor;
-  }
-}
-
-class SportCategoryHelper {
-  static IconData iconFor(String jenisOlahraga) {
-    final lower = jenisOlahraga.toLowerCase();
-    if (lower.contains('futsal') || lower.contains('sepak') || lower.contains('football')) {
-      return Icons.sports_soccer_rounded;
-    }
-    if (lower.contains('badminton') || lower.contains('bulu') || lower.contains('tenis')) {
-      return Icons.sports_tennis_rounded;
-    }
-    if (lower.contains('basket')) {
-      return Icons.sports_basketball_rounded;
-    }
-    if (lower.contains('voli') || lower.contains('volley')) {
-      return Icons.sports_volleyball_rounded;
-    }
-    return Icons.stadium_rounded;
-  }
-
-  static Color accentBgFor(String jenisOlahraga) {
-    final lower = jenisOlahraga.toLowerCase();
-    if (lower.contains('basket')) {
-      return const Color(0xFFFFEDD5);
-    }
-    if (lower.contains('badminton') || lower.contains('bulu')) {
-      return const Color(0xFFDCFCE7);
-    }
-    if (lower.contains('tenis')) {
-      return const Color(0xFFE0F2FE);
-    }
-    return const Color(0xFFECFDF5);
   }
 }

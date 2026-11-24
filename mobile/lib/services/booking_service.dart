@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
 import '../core/api_config.dart';
 import '../models/booking_model.dart';
 import 'auth_service.dart';
@@ -21,16 +20,18 @@ class BookingResult {
 class BookingService {
   static http.Client client = http.Client();
 
-  static Future<List<BookingModel>> fetchBookings() async {
-    final session = AuthService.getSavedSession();
-    final token = session?.token ?? '';
+  static Map<String, String> _authJsonHeaders() {
+    final token = AuthService.getSavedSession()?.token ?? '';
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+  }
 
+  static Future<List<BookingModel>> fetchBookings() async {
     final response = await client.get(
       Uri.parse('${ApiConfig.baseUrl}/api/bookings'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+      headers: _authJsonHeaders(),
     );
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
@@ -52,39 +53,29 @@ class BookingService {
     String? buktiBayarFileName,
   }) async {
     try {
-      final session = AuthService.getSavedSession();
-      final token = session?.token ?? '';
-
-      final uri = Uri.parse('${ApiConfig.baseUrl}/api/bookings');
-      final request = http.MultipartRequest('POST', uri);
+      final token = AuthService.getSavedSession()?.token ?? '';
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('${ApiConfig.baseUrl}/api/bookings'),
+      );
       request.headers['Authorization'] = 'Bearer $token';
-
       request.fields['lapangan_id'] = lapanganId.toString();
       request.fields['tanggal_sewa'] = tanggalSewa;
       request.fields['jam_mulai'] = jamMulai;
       request.fields['durasi_jam'] = durasiJam.toString();
 
       if (buktiBayarBytes != null && buktiBayarBytes.isNotEmpty) {
-        final safeName = (buktiBayarFileName != null && buktiBayarFileName.isNotEmpty)
-            ? buktiBayarFileName
-            : 'bukti_bayar.png';
-        final lower = safeName.toLowerCase();
-        final subType = (lower.endsWith('.jpg') || lower.endsWith('.jpeg'))
-            ? 'jpeg'
-            : 'png';
-
         request.files.add(
-          http.MultipartFile.fromBytes(
+          ApiConfig.buildImageMultipart(
             'bukti_bayar',
             buktiBayarBytes,
-            filename: safeName,
-            contentType: MediaType('image', subType),
+            buktiBayarFileName,
+            fallbackName: 'bukti_bayar.png',
           ),
         );
       }
 
-      final streamedResponse = await client.send(request);
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await http.Response.fromStream(await client.send(request));
       final body = jsonDecode(response.body) as Map<String, dynamic>;
 
       if ((response.statusCode == 201 || response.statusCode == 200) &&
@@ -101,7 +92,7 @@ class BookingService {
         success: false,
         message: body['message']?.toString() ?? 'Gagal membuat pesanan lapangan',
       );
-    } catch (e) {
+    } catch (_) {
       return const BookingResult(
         success: false,
         message: 'Tidak dapat terhubung ke server backend. Pastikan server aktif.',
@@ -115,32 +106,22 @@ class BookingService {
     required String buktiBayarFileName,
   }) async {
     try {
-      final session = AuthService.getSavedSession();
-      final token = session?.token ?? '';
-
-      final uri = Uri.parse('${ApiConfig.baseUrl}/api/bookings/$bookingId');
-      final request = http.MultipartRequest('PUT', uri);
+      final token = AuthService.getSavedSession()?.token ?? '';
+      final request = http.MultipartRequest(
+        'PUT',
+        Uri.parse('${ApiConfig.baseUrl}/api/bookings/$bookingId'),
+      );
       request.headers['Authorization'] = 'Bearer $token';
-
-      final safeName = buktiBayarFileName.isNotEmpty
-          ? buktiBayarFileName
-          : 'bukti_bayar.png';
-      final lower = safeName.toLowerCase();
-      final subType = (lower.endsWith('.jpg') || lower.endsWith('.jpeg'))
-          ? 'jpeg'
-          : 'png';
-
       request.files.add(
-        http.MultipartFile.fromBytes(
+        ApiConfig.buildImageMultipart(
           'bukti_bayar',
           buktiBayarBytes,
-          filename: safeName,
-          contentType: MediaType('image', subType),
+          buktiBayarFileName,
+          fallbackName: 'bukti_bayar.png',
         ),
       );
 
-      final streamedResponse = await client.send(request);
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await http.Response.fromStream(await client.send(request));
       final body = jsonDecode(response.body) as Map<String, dynamic>;
 
       if (response.statusCode == 200 && body['success'] == true) {
@@ -156,7 +137,7 @@ class BookingService {
         success: false,
         message: body['message']?.toString() ?? 'Gagal memperbarui bukti bayar',
       );
-    } catch (e) {
+    } catch (_) {
       return const BookingResult(
         success: false,
         message: 'Tidak dapat terhubung ke server backend.',
@@ -166,15 +147,9 @@ class BookingService {
 
   static Future<BookingResult> deleteBooking(int bookingId) async {
     try {
-      final session = AuthService.getSavedSession();
-      final token = session?.token ?? '';
-
       final response = await client.delete(
         Uri.parse('${ApiConfig.baseUrl}/api/bookings/$bookingId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: _authJsonHeaders(),
       );
 
       final body = jsonDecode(response.body) as Map<String, dynamic>;
@@ -189,7 +164,7 @@ class BookingService {
         success: false,
         message: body['message']?.toString() ?? 'Gagal membatalkan pesanan',
       );
-    } catch (e) {
+    } catch (_) {
       return const BookingResult(
         success: false,
         message: 'Tidak dapat terhubung ke server backend.',
@@ -202,18 +177,10 @@ class BookingService {
     required String statusBooking,
   }) async {
     try {
-      final session = AuthService.getSavedSession();
-      final token = session?.token ?? '';
-
       final response = await client.patch(
         Uri.parse('${ApiConfig.baseUrl}/api/bookings/$bookingId/status'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'status_booking': statusBooking,
-        }),
+        headers: _authJsonHeaders(),
+        body: jsonEncode({'status_booking': statusBooking}),
       );
 
       final body = jsonDecode(response.body) as Map<String, dynamic>;
@@ -231,7 +198,7 @@ class BookingService {
         success: false,
         message: body['message']?.toString() ?? 'Gagal mengubah status pesanan',
       );
-    } catch (e) {
+    } catch (_) {
       return const BookingResult(
         success: false,
         message: 'Tidak dapat terhubung ke server backend.',

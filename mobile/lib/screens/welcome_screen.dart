@@ -69,8 +69,8 @@ class WelcomeScreen extends StatelessWidget {
                             child: ElevatedButton(
                               onPressed: () {
                                 Navigator.of(context).push(
-                                  RollUpPageRoute(
-                                    page: const LoginScreen(),
+                                  MaterialPageRoute(
+                                    builder: (_) => const LoginScreen(),
                                   ),
                                 );
                               },
@@ -99,8 +99,8 @@ class WelcomeScreen extends StatelessWidget {
                             child: ElevatedButton(
                               onPressed: () {
                                 Navigator.of(context).push(
-                                  RollUpPageRoute(
-                                    page: const RegisterScreen(),
+                                  MaterialPageRoute(
+                                    builder: (_) => const RegisterScreen(),
                                   ),
                                 );
                               },

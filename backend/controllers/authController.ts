@@ -2,13 +2,21 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../config/db';
-import { AuthRequest } from '../middleware/authMiddleware';
+import { AuthRequest, UserPayload } from '../middleware/authMiddleware';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'sportbook_ujilevel_secret_key_2026';
 
+function signUserToken(user: UserPayload): string {
+  return jwt.sign(
+    { id: user.id, name: user.name, email: user.email, role: user.role },
+    JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+}
+
 export async function register(req: Request, res: Response): Promise<void> {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
       res.status(400).json({
@@ -18,8 +26,7 @@ export async function register(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       res.status(400).json({
         success: false,
         message: 'Format email tidak valid',
@@ -46,31 +53,18 @@ export async function register(req: Request, res: Response): Promise<void> {
     }
 
     const hashedPassword = await bcrypt.hash(String(password), 10);
-    const assignedRole = role === 'admin' ? 'admin' : 'penyewa';
-
     const result = await pool.query(
       `INSERT INTO users (name, email, password, role)
-       VALUES ($1, $2, $3, $4)
+       VALUES ($1, $2, $3, 'penyewa')
        RETURNING id, name, email, role, created_at`,
-      [String(name).trim(), normalizedEmail, hashedPassword, assignedRole]
+      [String(name).trim(), normalizedEmail, hashedPassword]
     );
 
     const user = result.rows[0];
-    const token = jwt.sign(
-      {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-
     res.status(201).json({
       success: true,
       message: 'Registrasi akun berhasil',
-      data: { token, user },
+      data: { token: signUserToken(user), user },
     });
   } catch (error) {
     console.error('Register error:', error);
@@ -99,26 +93,8 @@ export async function login(req: Request, res: Response): Promise<void> {
       [normalizedEmail]
     );
 
-    if (result.rows.length === 0) {
-      res.status(401).json({
-        success: false,
-        message: 'Email atau password salah',
-      });
-      return;
-    }
-
     const user = result.rows[0];
-    let isMatch = await bcrypt.compare(String(password), user.password);
-    if (!isMatch) {
-      const passStr = String(password);
-      if (user.role === 'admin' && (passStr === 'Admin123' || passStr === 'password123')) {
-        isMatch = true;
-      } else if (user.role === 'penyewa' && (passStr === 'Penyewa123' || passStr === 'password123')) {
-        isMatch = true;
-      }
-    }
-
-    if (!isMatch) {
+    if (!user || !(await bcrypt.compare(String(password), user.password))) {
       res.status(401).json({
         success: false,
         message: 'Email atau password salah',
@@ -126,28 +102,19 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const token = jwt.sign(
-      {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    const userPayload: UserPayload = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    };
 
     res.status(200).json({
       success: true,
       message: 'Login berhasil',
       data: {
-        token,
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
+        token: signUserToken(userPayload),
+        user: userPayload,
       },
     });
   } catch (error) {
@@ -162,10 +129,7 @@ export async function login(req: Request, res: Response): Promise<void> {
 export async function getProfile(req: AuthRequest, res: Response): Promise<void> {
   try {
     if (!req.user) {
-      res.status(401).json({
-        success: false,
-        message: 'Unauthorized',
-      });
+      res.status(401).json({ success: false, message: 'Unauthorized' });
       return;
     }
 
@@ -175,10 +139,7 @@ export async function getProfile(req: AuthRequest, res: Response): Promise<void>
     );
 
     if (result.rows.length === 0) {
-      res.status(404).json({
-        success: false,
-        message: 'User tidak ditemukan',
-      });
+      res.status(404).json({ success: false, message: 'User tidak ditemukan' });
       return;
     }
 

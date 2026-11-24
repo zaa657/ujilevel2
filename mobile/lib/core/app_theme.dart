@@ -13,6 +13,35 @@ class AppColors {
   static const Color errorInk = Color(0xFF991B1B);
 }
 
+InputDecoration authInputDecoration({
+  required String hintText,
+  Widget? suffixIcon,
+}) {
+  return InputDecoration(
+    hintText: hintText,
+    hintStyle: const TextStyle(
+      color: AppColors.textMuted,
+      fontWeight: FontWeight.w400,
+    ),
+    filled: true,
+    fillColor: AppColors.fieldMist,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+    suffixIcon: suffixIcon,
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(28),
+      borderSide: const BorderSide(color: AppColors.borderSubtle),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(28),
+      borderSide: const BorderSide(color: AppColors.borderSubtle),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(28),
+      borderSide: const BorderSide(color: AppColors.courtInk, width: 2),
+    ),
+  );
+}
+
 class ResponsiveContainer extends StatelessWidget {
   final Widget child;
   final Color backgroundColor;
@@ -79,54 +108,4 @@ class SportBookBrand extends StatelessWidget {
       semanticLabel: 'SportsBook',
     );
   }
-}
-
-const Cubic kInstantRollUpCurve = Cubic(0.05, 0.7, 0.1, 1.0);
-const Cubic kInstantReverseCurve = Cubic(0.3, 0.0, 0.8, 0.15);
-
-class RollUpPageRoute<T> extends PageRouteBuilder<T> {
-  final Widget page;
-
-  RollUpPageRoute({
-    required this.page,
-  }) : super(
-          transitionDuration: const Duration(milliseconds: 360),
-          reverseTransitionDuration: const Duration(milliseconds: 300),
-          pageBuilder: (context, animation, secondaryAnimation) => page,
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            if (MediaQuery.disableAnimationsOf(context)) {
-              return child;
-            }
-
-            final primaryCurve = CurvedAnimation(
-              parent: animation,
-              curve: kInstantRollUpCurve,
-              reverseCurve: kInstantReverseCurve,
-            );
-
-            final secondaryCurve = CurvedAnimation(
-              parent: secondaryAnimation,
-              curve: kInstantRollUpCurve,
-              reverseCurve: kInstantReverseCurve,
-            );
-
-            final enterSlide = Tween<Offset>(
-              begin: const Offset(0.0, 1.0),
-              end: Offset.zero,
-            ).animate(primaryCurve);
-
-            final exitSlide = Tween<Offset>(
-              begin: Offset.zero,
-              end: const Offset(0.0, -1.0),
-            ).animate(secondaryCurve);
-
-            return SlideTransition(
-              position: exitSlide,
-              child: SlideTransition(
-                position: enterSlide,
-                child: child,
-              ),
-            );
-          },
-        );
 }

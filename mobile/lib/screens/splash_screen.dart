@@ -26,11 +26,11 @@ class _SplashScreenState extends State<SplashScreen> {
     final session = AuthService.getSavedSession();
     if (session != null && session.user != null) {
       Navigator.of(context).pushReplacement(
-        RollUpPageRoute(page: HomeScreen(user: session.user!)),
+        MaterialPageRoute(builder: (_) => HomeScreen(user: session.user!)),
       );
     } else {
       Navigator.of(context).pushReplacement(
-        RollUpPageRoute(page: const WelcomeScreen()),
+        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
       );
     }
   }

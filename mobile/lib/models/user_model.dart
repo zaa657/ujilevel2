@@ -20,14 +20,5 @@ class UserModel {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'email': email,
-      'role': role,
-    };
-  }
-
   bool get isAdmin => role.toLowerCase() == 'admin';
 }
