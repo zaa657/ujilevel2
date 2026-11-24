@@ -18,7 +18,7 @@ router.get('/:id', verifyToken, getBookingById);
 router.post(
   '/',
   verifyToken,
-  authorizeRole('penyewa', 'admin'),
+  authorizeRole('penyewa'),
   handleSingleUpload('bukti_bayar'),
   createBooking
 );

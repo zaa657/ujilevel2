@@ -47,9 +47,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _currentTabIndex = widget.initialTabIndex;
-    _loadCatalogData();
-    if (_currentTabIndex == 1 && !_isAdmin) {
-      _loadBookingsData();
+    if (!_isAdmin) {
+      _loadCatalogData();
+      if (_currentTabIndex == 1) {
+        _loadBookingsData();
+      }
     }
   }
 
@@ -155,8 +157,7 @@ class _HomeScreenState extends State<HomeScreen> {
               index: _currentTabIndex,
               children: _isAdmin
                   ? [
-                      AdminManagementView(user: widget.user, onDataChanged: _loadCatalogData),
-                      _buildCatalogTab(),
+                      AdminManagementView(user: widget.user),
                       _buildProfileTab(),
                     ]
                   : [
@@ -385,7 +386,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final items = _isAdmin
         ? [
             (icon: Icons.admin_panel_settings_rounded, label: 'Admin UMKM'),
-            (icon: Icons.home_rounded, label: 'Katalog'),
             (icon: Icons.person_rounded, label: 'Profile'),
           ]
         : [
